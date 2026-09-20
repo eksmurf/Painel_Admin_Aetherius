@@ -2,6 +2,8 @@
 
 Data: 20/09/2026. Método: leitura do código local, documentos do projeto e documentação/código público oficial do SkyMP. Nenhum comando administrativo foi executado em jogo.
 
+**Complemento da pesquisa:** após indicação explícita do `admin-service.js` público, foi feita a [reavaliação direta do Heavy RP](REAVALIACAO_HEAVY_RP.md), incluindo comparação de revisões e 110 testes existentes. Os achados da tabela abaixo continuam descrevendo a árvore Aetherius; não devem ser atribuídos automaticamente ao Heavy RP atual, que já corrige kick, identidade de conta e roteamento de eventos.
+
 ## Base de referência
 
 O README da raiz descreve uma fase anterior do laboratório. A árvore `Aetherius-RP-Local` contém a integração Aetherius/Mercurius mais recente encontrada, com `aetherius/gamemode`, `aetherius/ui`, cliente e servidor. Foi escolhida como alvo proposto do plano, sem presumir qual executável está ativo neste momento.
