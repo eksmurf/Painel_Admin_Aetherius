@@ -1,0 +1,75 @@
+#aetherius-admin { --bg:#151b23; --panel:#1b232e; --line:#303d4c; --muted:#acb7c4; --text:#edf1f5; --accent:#95bada; position:fixed; inset:3vh 3vw; z-index:100000; display:grid; grid-template-rows:64px 1fr 36px; color:var(--text); background:var(--bg); border:1px solid #465363; border-radius:8px; font:14px/1.45 'Segoe UI',Arial,sans-serif; box-shadow:0 16px 60px #0008; text-align:left; }
+#aetherius-admin[hidden], #aetherius-admin [hidden] { display:none !important; }
+#aetherius-admin * { box-sizing:border-box; }
+#aetherius-admin button, #aetherius-admin input, #aetherius-admin select, #aetherius-admin textarea { font:inherit; }
+#aetherius-admin button { cursor:pointer; border:1px solid var(--line); border-radius:4px; color:var(--text); background:#253140; padding:8px 12px; line-height:1.35; }
+#aetherius-admin button:hover:not(:disabled) { background:#35475b; border-color:#70869f; }
+#aetherius-admin button:disabled { cursor:not-allowed; opacity:.5; }
+#aetherius-admin :focus-visible { outline:2px solid #a0c9ef; outline-offset:3px; }
+#aetherius-admin input, #aetherius-admin select, #aetherius-admin textarea { width:100%; min-width:0; color:var(--text); background:#121a23; border:1px solid #435165; border-radius:4px; padding:9px 10px; }
+#aetherius-admin textarea { resize:vertical; min-height:74px; max-height:130px; }
+#aetherius-admin input::placeholder, #aetherius-admin textarea::placeholder { color:#8998aa; }
+#aetherius-admin h1, #aetherius-admin h2, #aetherius-admin h3, #aetherius-admin p { margin:0; }
+#aetherius-admin h1 { font-size:19px; font-weight:600; letter-spacing:.2px; }
+#aetherius-admin h2 { font-size:18px; font-weight:600; }
+#aetherius-admin h3 { font-size:15px; font-weight:600; }
+#aetherius-admin small, #aetherius-admin .muted { font-size:12px; color:var(--muted); }
+#aetherius-admin .aap-header { padding:12px 20px; display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); }
+#aetherius-admin .aap-brand { display:flex; align-items:center; gap:12px; }
+#aetherius-admin .aap-mark { display:grid; place-items:center; width:32px; height:32px; border:1px solid #617184; border-radius:5px; font-size:15px; color:#b7c9da; }
+#aetherius-admin .aap-header-actions { display:flex; align-items:center; gap:12px; }
+#aetherius-admin .aap-badge { padding:3px 8px; border-radius:3px; background:#25374a; color:#c6def4; font-size:12px; white-space:nowrap; }
+#aetherius-admin .aap-demo { background:#463a25; color:#e4c893; }
+#aetherius-admin .aap-layout { min-height:0; display:grid; grid-template-columns:255px minmax(0,1fr); }
+#aetherius-admin .aap-sidebar { display:flex; flex-direction:column; gap:12px; min-height:0; padding:18px 14px; background:#18202a; border-right:1px solid var(--line); }
+#aetherius-admin .aap-line { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+#aetherius-admin .aap-search { display:flex; gap:6px; }
+#aetherius-admin .aap-search button { padding:6px 9px; }
+#aetherius-admin .aap-player-list { list-style:none; padding:0; margin:0; overflow-y:auto; flex:1; min-height:0; }
+#aetherius-admin .aap-player { text-align:left; width:100%; display:flex; flex-direction:column; gap:4px; background:transparent; border:1px solid transparent; padding:11px 10px; margin:0 0 4px; }
+#aetherius-admin .aap-player[aria-pressed="true"] { background:#283e53; border-color:#6e94b7; }
+#aetherius-admin .aap-main { min-height:0; min-width:0; display:flex; flex-direction:column; }
+#aetherius-admin .aap-nav { display:flex; gap:6px; padding:14px 22px; border-bottom:1px solid var(--line); overflow-x:auto; flex-shrink:0; }
+#aetherius-admin .aap-nav button { background:transparent; border-color:transparent; white-space:nowrap; }
+#aetherius-admin .aap-nav button[aria-selected="true"] { background:#2d4053; color:#d6e8f8; border-color:#526c85; }
+#aetherius-admin .aap-content { min-height:0; overflow:auto; padding:22px; }
+#aetherius-admin .aap-title { margin-bottom:18px; }
+#aetherius-admin .aap-title p { margin-top:4px; color:var(--muted); font-size:13px; }
+#aetherius-admin .aap-target { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:1px solid var(--line); background:#202c39; border-radius:5px; margin-bottom:18px; }
+#aetherius-admin .aap-target strong { font-size:14px; }
+#aetherius-admin .aap-target small { display:block; margin-top:2px; }
+#aetherius-admin .aap-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+#aetherius-admin .aap-card { background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:16px; display:flex; flex-direction:column; align-items:flex-start; gap:9px; min-height:156px; }
+#aetherius-admin .aap-card p { color:var(--muted); font-size:13px; flex:1; }
+#aetherius-admin .aap-card button { margin-top:5px; }
+#aetherius-admin .aap-card .aap-unavailable { font-size:12px; color:#b7a994; }
+#aetherius-admin .aap-danger { color:#f2b6ad; border-color:#765048; background:#34252a; }
+#aetherius-admin .aap-primary { background:#396180; border-color:#6a93b4; }
+#aetherius-admin .aap-status { min-height:36px; display:flex; justify-content:space-between; gap:12px; padding:8px 16px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+#aetherius-admin .aap-notice { margin:0 0 16px; padding:12px; background:#233b35; color:#c3e7d6; border:1px solid #436f60; border-radius:4px; }
+#aetherius-admin .aap-notice.error { background:#402a2c; border-color:#805259; color:#f4c3c2; }
+#aetherius-admin .aap-notice.warning { background:#3f3526; border-color:#7a6642; color:#f0d6a6; }
+#aetherius-admin .aap-empty { padding:24px 10px; color:var(--muted); }
+#aetherius-admin .aap-filters { display:grid; grid-template-columns:minmax(120px,1fr) 140px minmax(140px,1fr) auto; gap:8px; margin:16px 0; }
+#aetherius-admin .aap-filters label { font-size:12px; color:var(--muted); }
+#aetherius-admin .aap-filters label>* { margin-top:5px; }
+#aetherius-admin .aap-filters>button { align-self:end; }
+#aetherius-admin .aap-table-wrap { overflow:auto; border:1px solid var(--line); border-radius:4px; }
+#aetherius-admin table { border-collapse:collapse; width:100%; font-size:12px; }
+#aetherius-admin th { text-align:left; font-weight:500; color:var(--muted); background:#202a36; }
+#aetherius-admin th, #aetherius-admin td { padding:10px 12px; border-bottom:1px solid var(--line); }
+#aetherius-admin td button { padding:4px 7px; font-size:12px; }
+#aetherius-admin .aap-page { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; font-size:12px; color:var(--muted); }
+#aetherius-admin .aap-dialog { position:absolute; inset:0; background:#060d15c9; display:grid; place-items:center; z-index:2; padding:20px; }
+#aetherius-admin .aap-dialog-box { width:min(490px,100%); max-height:100%; overflow:auto; background:#1c2733; padding:22px; border:1px solid #66778c; border-radius:7px; box-shadow:0 20px 60px #0008; }
+#aetherius-admin .aap-dialog-box h2 { margin-bottom:8px; }
+#aetherius-admin .aap-dialog-box>p { color:var(--muted); margin-bottom:16px; }
+#aetherius-admin .aap-dialog-box label { display:block; margin:14px 0; font-size:13px; }
+#aetherius-admin .aap-dialog-box label>* { margin-top:6px; }
+#aetherius-admin .aap-dialog-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+#aetherius-admin .aap-details { display:grid; grid-template-columns:100px 1fr; gap:10px; font-size:13px; }
+#aetherius-admin .aap-details dt { color:var(--muted); }
+#aetherius-admin .aap-details dd { margin:0; overflow-wrap:anywhere; }
+@media(min-width:1700px) { #aetherius-admin { inset:5vh 8vw; } #aetherius-admin .aap-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:1000px) { #aetherius-admin { inset:12px; } #aetherius-admin .aap-layout { grid-template-columns:220px minmax(0,1fr); } #aetherius-admin .aap-content { padding:16px; } #aetherius-admin .aap-nav { padding:12px; gap:0; } #aetherius-admin .aap-filters { grid-template-columns:1fr 1fr; } #aetherius-admin .aap-header-actions .muted { display:none; } }
+@media(max-width:650px) { #aetherius-admin { inset:0; border-radius:0; grid-template-rows:80px 1fr 42px; } #aetherius-admin .aap-layout { grid-template-columns:160px minmax(0,1fr); } #aetherius-admin .aap-grid { grid-template-columns:1fr; } #aetherius-admin .aap-header { padding:10px; } #aetherius-admin .aap-mark { display:none; } #aetherius-admin .aap-demo { max-width:125px; white-space:normal; } #aetherius-admin .aap-sidebar { padding:12px 8px; } #aetherius-admin .aap-search { flex-wrap:wrap; } }

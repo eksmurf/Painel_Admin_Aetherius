@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "allowOfflineLab": false,
+  "maxPlayers": 64,
+  "enabledActions": ["player.teleportTo", "player.bring", "player.kick"],
+  "items": []
+}
