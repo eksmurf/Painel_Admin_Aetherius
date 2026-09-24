@@ -1,6 +1,6 @@
 {
   "name": "aetherius-admin-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Painel administrativo ingame Aetherius para SkyMP",
   "engines": { "node": ">=22" },

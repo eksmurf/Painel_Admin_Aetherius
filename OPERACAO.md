@@ -1,8 +1,10 @@
-# Operação do painel — 0.1.0
+# Operação do painel — 0.1.1
+
+Para o procedimento completo, incluindo build, runtime e instalação no MO2, siga [INTEGRACAO_INGAME.md](INTEGRACAO_INGAME.md). O [prompt para o Codex](PROMPT_INSTALACAO.md) organiza essas etapas no diretório de destino.
 
 ## Requisitos
 
-Destino: monorepo Aetherius, com os contratos existentes de `commands`, `identity-service`, `database`, `core/transaction-service`, `core/espm`, registro de comandos e router de UI. Node.js 22; mysql2 é fornecido pelo gamemode. O banco precisa do schema/migrações operacionais Heavy RP, incluindo chave única `(character_id, base_id)` no inventário.
+Destino: monorepo Aetherius, com os contratos existentes de `commands`, `identity-service`, `database`, `core/transaction-service`, `core/espm`, registro de comandos e router de UI. Node.js 22; na instalação MariaDB, mysql2 é fornecido pelo gamemode. O banco precisa do schema/migrações operacionais Heavy RP, incluindo chave única `(character_id, base_id)` no inventário. No Aetherius com SQLite, preserve o adaptador e as migrações do servidor; eles não são instalados pelo painel.
 
 Contas devem ser persistentes, autenticadas e associadas a personagens aprovados. Acesso exige cargo em `staff_roles` e permissão em `aetherius_admin_permissions`; permissões do serviço antigo não substituem esta tabela.
 
@@ -10,7 +12,7 @@ Contas devem ser persistentes, autenticadas e associadas a personagens aprovados
 
 1. Execute `node scripts/integrate.cjs --check`, depois `--apply`. Opcional: `--target=CAMINHO`. O script verifica os pontos de alteração e salva backups antes de integrar gamemode, UI, atalho F7 e transporte privado.
 2. Compile `skymp5-client` pelo build JavaScript do projeto. Artefato: `build/dist/client/Data/Platform/Plugins/skymp5-client.js`.
-3. Aplique a migração pelo runner, com o caminho absoluto do módulo de banco do ambiente desejado:
+3. Se o backend for MariaDB/MySQL, aplique a migração pelo runner, com o caminho absoluto do módulo de banco do ambiente desejado. Para SQLite, siga a seção de persistência do guia; não execute este runner:
 
 ```powershell
 node scripts/migrate.cjs "D:\CAMINHO\gamemode\database.js"
@@ -24,7 +26,7 @@ O runner usa as credenciais daquele ambiente, registra a execução e não resta
 
 O módulo recusa `enableConsoleCommandsForAll`, autowhitelist sintética (`ALLOW_LOCAL_AUTOWHITELIST=true`) e offline não autorizado. `allowOfflineLab: true` permite laboratório offline com contas persistentes válidas; não cria identidade administrativa nem aceita conta zero. Offline com `NODE_ENV=production` permanece bloqueado.
 
-Na ativação, concessões de console persistidas nos atores dinâmicos FF são revogadas. Outros módulos não devem voltar a conceder `consoleCommandsAllowed`. O painel nunca concede console nativo livre.
+Na ativação, `console-guard.cjs` consulta `changeForms` da persistência nativa `file`, resolve os atores por descriptor, revoga concessões pela API `mp` e confirma o resultado, sem editar saves. Exige `databaseDriver`/`databaseName` nativos válidos e o diretório de execução correto; um driver não suportado bloqueia a ativação. Essa persistência do mundo é independente do banco RP MariaDB/SQLite. Outros módulos não devem voltar a conceder `consoleCommandsAllowed`. O painel nunca concede console nativo livre.
 
 ## Configuração de ações
 

@@ -1,6 +1,8 @@
 # Painel de Administrador Aetherius
 
-Versão 0.1.0 — 20/09/2026. Interface e serviço implementados, integração aplicada ao código Aetherius local e cliente compilado. Ativação e homologação ingame pendentes. Repositório privado.
+Versão 0.1.1 — 23/09/2026. Interface e serviço implementados; integração, ativação do backend e instalação do cliente realizadas no ambiente local de referência. Homologação dentro do Skyrim pendente. Repositório público; configurações privadas e dados de jogadores não são distribuídos.
+
+Para implementar no seu ambiente: [guia de integração ingame](INTEGRACAO_INGAME.md) e [prompt pronto para o Codex](PROMPT_INSTALACAO.md). O guia usa os componentes já presentes no diretório e distingue instalação MariaDB, servidor Aetherius com SQLite e persistência nativa do mundo.
 
 ![Interface de administração com dados fictícios](docs/images/administracao.png)
 
@@ -35,7 +37,7 @@ A prévia fica em `http://127.0.0.1:4177/demo.html`, com dados fictícios e serv
 
 O destino padrão é `../Aetherius-RP-Local`. Outro destino: `node scripts/integrate.cjs --apply --target=CAMINHO`. Arquivos anteriores ficam em `artifacts/integration/`.
 
-Foram aprovados **33 testes unitários, 10 cenários MariaDB e 6 cenários de navegador**, além do build TypeScript do cliente. Consulte [operação e instalação](OPERACAO.md) e [decisões e validação](IMPLEMENTACAO.md).
+Na implementação inicial foram aprovados **33 testes unitários, 10 cenários MariaDB e 6 cenários de navegador**, além do build TypeScript do cliente. A versão 0.1.1 inclui também os testes da proteção de console trazida da instalação local. Consulte [operação e instalação](OPERACAO.md) e [decisões e validação](IMPLEMENTACAO.md).
 
 O [Meridian UI](https://github.com/heathbrownkeyworks/MeridianUI) foi avaliado como plataforma nativa SKSE/CEF. Esta versão aproveita o CEF existente do SkyMP; não instala Meridian nem declara compatibilidade ingame com ele.
 
@@ -56,4 +58,4 @@ A base de integração proposta é `../Aetherius-RP-Local`, que contém cliente,
 
 **Conclusão de viabilidade:** há uma ponte CEF ↔ cliente ↔ servidor aproveitável e serviços administrativos existentes. O painel é viável como extensão do gamemode, mas não como executor irrestrito de qualquer comando Vanilla. Cada ação precisa de um adaptador autorizado, validação dos efeitos no servidor e homologação com dois clientes.
 
-Os documentos de planejamento registram a pesquisa anterior. O estado implementado e os limites atuais estão em `IMPLEMENTACAO.md`. A ativação do runtime, migração no banco do servidor e distribuição ao Skyrim ainda não foram feitas.
+Os documentos de planejamento registram a pesquisa anterior. O estado da instalação de referência e o caminho para reproduzi-la estão em `INTEGRACAO_INGAME.md`; decisões e validações anteriores permanecem em `IMPLEMENTACAO.md`. A configuração distribuída continua desativada por padrão e cada instalação precisa de ativação e validação próprias.

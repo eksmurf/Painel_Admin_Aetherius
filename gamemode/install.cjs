@@ -6,6 +6,7 @@ const { createService } = require('./service.cjs');
 const { createHost } = require('./skymp-host.cjs');
 const { createMysqlStore } = require('./mysql-store.cjs');
 const { byId } = require('./catalog.cjs');
+const { revokePersistedConsole } = require('./console-guard.cjs');
 function install({ mp, gamemodeDir }) {
   const configPath = path.resolve(gamemodeDir, '../config/admin-panel.local.json');
   if (!fs.existsSync(configPath)) return null;
@@ -22,13 +23,7 @@ function install({ mp, gamemodeDir }) {
     if (!item || !/^[a-zA-Z0-9_-]{1,48}$/.test(item.id) || itemIds.has(item.id) || typeof item.label !== 'string' || !item.label.trim() || item.label.length > 80 || typeof item.descriptor !== 'string' || !/^[a-fA-F0-9]+:[^:\r\n]+\.(esm|esp|esl)$/i.test(item.descriptor)) throw new Error('Invalid or duplicate admin item.');
     itemIds.add(item.id);
   }
-  // Clear persisted grants before registering commands or accepting panel traffic.
-  // Dynamic player actors use the FF source selector in SkyMP.
-  for (const actorId of mp.getAllForms(0xff)) {
-    let allowed;
-    try { allowed = mp.get(actorId, 'consoleCommandsAllowed'); } catch { continue; /* non-actor */ }
-    if (allowed) mp.set(actorId, 'consoleCommandsAllowed', false);
-  }
+  const revokedConsoleGrants = revokePersistedConsole(mp, settings);
   const load = name => require(path.join(gamemodeDir, name));
   const commands = load('commands');
   const host = createHost({ mp, commands, identity: load('identity-service'), espm: load('core/espm'), maxPlayers: config.maxPlayers });
@@ -76,6 +71,7 @@ function install({ mp, gamemodeDir }) {
     }
   }, 1000);
   interval.unref?.();
+  console.log(`[aetherius-admin] enabled; actions=${config.enabledActions.join(',')}; revokedConsoleGrants=${revokedConsoleGrants}`);
   return { service, shutdown: () => { clearInterval(interval); router.unregister('admin'); } };
 }
 module.exports = { install };

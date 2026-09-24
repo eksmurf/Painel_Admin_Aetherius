@@ -1,5 +1,9 @@
 # Implementação e decisões — 20/09/2026
 
+**Atualização de 23/09/2026 (0.1.1):** a ativação e instalação local posteriores a este registro estão documentadas em [INTEGRACAO_INGAME.md](INTEGRACAO_INGAME.md). A proteção `console-guard.cjs`, seu ajuste em `install.cjs` e testes foram incorporados ao repositório do painel. O monorepo de referência passou a usar SQLite para os dados RP, mantendo a persistência nativa do mundo em arquivos. A infraestrutura SQLite não faz parte deste pacote. A homologação ingame continua pendente.
+
+Validação desta atualização: 41 testes unitários aprovados (33 existentes e 8 da proteção de console); `integrate.cjs --check` contra o monorepo local retornou zero arquivos a atualizar. Os resultados de SQL, navegador e compilação abaixo são históricos da implementação inicial, não uma nova execução nesta atualização documental e de proteção do boot.
+
 ## Arquitetura
 
 ```mermaid
@@ -64,4 +68,4 @@ Para repetir SQL: checkout opcional em `AETHERIUS_SOURCE`, instância MariaDB de
 
 As referências orientaram a organização das abas; o visual é próprio e funcional. Banimento persistente, animações, investigação de mundo, edição de cargos, receitas e whitelist não foram implementados no novo painel. A whitelist continua no fluxo existente; estados indisponíveis não executam ações.
 
-Código integrado ao checkout local e cliente compilado. Ativação, migração no banco do servidor e distribuição ao Skyrim não realizadas. A configuração inicial continua desativada. Homologação pendente descrita em `OPERACAO.md`.
+No marco original de 20/09/2026, o código estava integrado ao checkout local e o cliente compilado, antes da ativação e instalação. Essas etapas foram realizadas posteriormente no ambiente de referência, conforme o guia atualizado. A configuração distribuída continua desativada. Homologação pendente descrita em `OPERACAO.md`.
