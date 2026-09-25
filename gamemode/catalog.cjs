@@ -13,5 +13,14 @@ const actions = [
   { id: 'staff.manage', label: 'Gerenciar cargos', category: 'staff', description: 'Conceder ou revogar acesso administrativo.', unavailable: 'As concessões são feitas pelo responsável pelo servidor.' },
   { id: 'whitelist.manage', label: 'Gerenciar whitelist', category: 'staff', description: 'Análise de acesso e personagens.', unavailable: 'Utilize o fluxo de whitelist existente do servidor.' }
 ];
+for (const action of require('./extension-catalog.cjs').definitions) {
+  const index = actions.findIndex(entry => entry.id === action.id);
+  if (index === -1) actions.push(action); else actions[index] = action;
+}
 const byId = new Map(actions.map(action => [action.id, action]));
-module.exports = { actions, byId };
+const hiddenActions = new Set(['identity.reveal','faction.membership','profession.set','pet.assign','pet.dismiss','pet.summon','destination.save','destination.teleport','destination.remove','job.save','job.remove','zone.save','zone.remove','weather.remove']);
+for (const action of actions) {
+  action.panelHidden = hiddenActions.has(action.id);
+  if (['world.animation','world.probe','staff.mode','weather.save','zone.save'].includes(action.id)) action.category = 'administration';
+}
+module.exports = { actions, byId, hiddenActions };

@@ -1,61 +1,56 @@
 # Painel de Administrador Aetherius
 
-Versão 0.1.1 — 23/09/2026. Interface e serviço implementados; integração, ativação do backend e instalação do cliente realizadas no ambiente local de referência. Homologação dentro do Skyrim pendente. Repositório público; configurações privadas e dados de jogadores não são distribuídos.
+Painel administrativo ingame para o servidor SkyMP Aetherius. Interface compacta e levemente transparente, ações diretas, permissões verificadas no servidor e auditoria persistente. Configurações privadas, bancos de jogadores e arquivos do jogo não são distribuídos.
 
-Para implementar no seu ambiente: [guia de integração ingame](INTEGRACAO_INGAME.md) e [prompt pronto para o Codex](PROMPT_INSTALACAO.md). O guia usa os componentes já presentes no diretório e distingue instalação MariaDB, servidor Aetherius com SQLite e persistência nativa do mundo.
-
-![Interface de administração com dados fictícios](docs/images/administracao.png)
-
-Painel compacto, com títulos de 15–19 px, texto de 14 px e apoio de 12–13 px. Inclui jogadores pesquisáveis, seleção de alvo, justificativa, confirmação e auditoria paginada.
-
-| Recurso | Implementação |
+| Área | Recursos atuais |
 | --- | --- |
-| Ir até / trazer jogador | Localização autoritativa, incluindo célula/mundo |
-| Expulsar da sessão | Converte ator em usuário de rede; aceita slot zero |
-| Definir saldo RP | Transação SQL e ledger financeiro |
-| Entregar item | Catálogo autorizado, ledger e conferência no servidor |
-| Revelar identidade | Consulta privada e auditoria sensível |
-| Encerrar personagem | Aposentadoria persistente e desconexão |
-| Auditoria | Ação, resultado, personagem/solicitação, paginação e motivo |
-| Banimento, animações, investigação, cargos e whitelist | Indisponíveis nesta versão |
+| Moderação | Ir até/trazer jogador, expulsar, banir, revogar banimento e recuperar jogador |
+| Administração | Entregar item, definir saldo RP, encerrar personagem, executar animação e investigar mundo |
+| Modo de atendimento | Invulnerabilidade, colisões, fantasma, invisibilidade, velocidade e câmera livre, exclusivamente no operador |
+| NPCs | Spawn imediato de um NPC autorizado na posição do operador, sem zona ou reposição automática |
+| Clima do servidor | Clima sincronizado nas áreas externas configuradas, inclusive para novas conexões; restauração do clima natural |
+| Catálogos | Pesquisa nos inventários por nome do jogador ou por item, totais por item e acesso ao inventário de cada proprietário |
+| Auditoria e Staff | Consulta de operações e permissões, conforme a autorização da conta |
 
-O módulo vem **desativado**. Após ativação, o exemplo libera somente teleporte e expulsão; demais ações exigem configuração explícita. Não existe executor de console arbitrário.
+As ações sem permissão aparecem em vermelho. Ações que dependem de jogador permanecem esmaecidas até a seleção. As descrições ficam no sumário inferior esquerdo de cada aba. Os seletores são desenhados dentro do painel, com rolagem e navegação por teclado.
 
-## Executar
+Na pesquisa de inventários, o estado ao vivo substitui o registro persistido quando disponível. Jogadores offline usam o último registro persistido. Baús não entram nos totais.
 
-Requer Node.js 22 ou superior; não é necessário instalar dependências npm próprias.
+O modo de atendimento e o spawn de NPC ignoram a seleção de outro jogador: o servidor resolve a sessão do operador. A câmera livre fecha o painel para liberar os controles; F7 reabre o painel. Os modos temporários expiram quando deixam de ser renovados pelo servidor.
+
+## Integração
+
+Requer Node.js 22 com `node:sqlite` disponível e um monorepo Aetherius compatível. Não é um painel independente para qualquer instalação SkyMP. O destino padrão é `../Aetherius-RP-Local`.
 
 ```powershell
-node scripts/preview.cjs
+node scripts/integrate.cjs --check
+node scripts/integrate.cjs --apply
+# Outro destino:
+node scripts/integrate.cjs --check --target=CAMINHO
+```
+
+A integração copia os módulos do gamemode, a interface e `client/AdminToolsService.ts`, conectando o transporte existente. Guarda backups em `artifacts/integration/`. Depois é necessário compilar o cliente e instalar os arquivos no runtime e no cliente do jogo conforme o [guia de integração](INTEGRACAO_INGAME.md). O comando não realiza essa implantação por conta própria.
+
+A câmera livre exige que o cliente nativo exponha `setFreeCameraMode(boolean): boolean`. A DLL do cliente não está incluída neste repositório. Os guias de instalação anteriores descrevem a base de integração; a tabela acima descreve os recursos atuais.
+
+O exemplo `config/admin-panel.example.json` permanece desativado e libera apenas teleporte e expulsão após ativação explícita. Cada instalação deve configurar `enabledActions`, permissões e os catálogos autorizados `items`, `npcs` e `weathers`. Os identificadores das ações e permissões estão em `gamemode/catalog.cjs` e `gamemode/extension-catalog.cjs`.
+
+Um `catalogFile` opcional, dentro da pasta de configuração, pode fornecer os catálogos junto de `loadOrder`, que deve coincidir com a ordem carregada pelo servidor. `globalWeatherWorldspaces` define os mundos externos abrangidos pelo clima; sem configuração adicional, o escopo padrão é Tamriel e Solstheim. Interiores e mundos fora desse escopo preservam o clima natural.
+
+## Validação e pacote
+
+```powershell
 npm test
-npm run integrate:check
-npm run integrate
+node tests/extensions-ui.cjs
 npm run package
 ```
 
-A prévia fica em `http://127.0.0.1:4177/demo.html`, com dados fictícios e serviço em memória, sem acesso ao jogo/banco. A entrada de produção não carrega mocks.
+Os testes das extensões usam os módulos SQLite, transações e esquema de `../Aetherius-RP-Local`. Os testes do cliente usam o TypeScript instalado em `../Aetherius-RP-Local/skymp5-client/node_modules`. O teste de interface requer Playwright e Chromium; `PLAYWRIGHT_MODULE` e `BROWSER_EXECUTABLE` permitem informar instalações existentes.
 
-O destino padrão é `../Aetherius-RP-Local`. Outro destino: `node scripts/integrate.cjs --apply --target=CAMINHO`. Arquivos anteriores ficam em `artifacts/integration/`.
+A validação local inclui 79 testes automatizados e cenários de navegador para inventários, modos do operador, spawn imediato e seletores em três tamanhos de tela. Os testes simulam a ponte do jogo e não substituem a validação dentro do Skyrim.
 
-Na implementação inicial foram aprovados **33 testes unitários, 10 cenários MariaDB e 6 cenários de navegador**, além do build TypeScript do cliente. A versão 0.1.1 inclui também os testes da proteção de console trazida da instalação local. Consulte [operação e instalação](OPERACAO.md) e [decisões e validação](IMPLEMENTACAO.md).
+O pacote em `dist/` inclui os módulos, o serviço do cliente, a interface, o exemplo de configuração, a migração e os avisos de licença. Não inclui dados privados nem relatórios de estudo. `npm run preview` mantém uma demonstração básica com dados fictícios, que não representa todas as funções disponíveis no servidor.
 
-O [Meridian UI](https://github.com/heathbrownkeyworks/MeridianUI) foi avaliado como plataforma nativa SKSE/CEF. Esta versão aproveita o CEF existente do SkyMP; não instala Meridian nem declara compatibilidade ingame com ele.
+## Licenças
 
-## Estudos anteriores
-
-Objetivo: oferecer à Staff autorizada uma interface dentro do Skyrim para consultar jogadores e executar ações administrativas, com permissão validada pelo servidor e registro de auditoria.
-
-Documentos:
-
-1. [Plano de implementação](PLANEJAMENTO.md): interface, arquitetura, acesso, etapas e critérios de aceite.
-2. [Matriz de comandos](MATRIZ_COMANDOS.md): relação entre botões, console Vanilla, comandos de chat, suporte encontrado e restrições.
-3. [Pesquisa e evidências](PESQUISA_TECNICA.md): documentação consultada, fontes locais e lacunas encontradas.
-4. [Reavaliação do Heavy RP](REAVALIACAO_HEAVY_RP.md): comparação direta com a `main` pública, componentes a reutilizar e testes executados.
-
-A base de integração proposta é `../Aetherius-RP-Local`, que contém cliente, servidor, gamemode e UI próprios. Os checkouts `vendor/heavy-rp` e `upstream/skymp` são referências, não destinos de implantação deste painel.
-
-**Revisão de 20/09/2026:** o [Heavy RP de vinicius3232](https://github.com/vinicius3232/skymp-heavy-rp/blob/f686977343156a2b188dc1271cabe9b2ae197e6a/skymp/gamemode/admin-service.js) passa a ser a base explícita de reaproveitamento dos serviços administrativos. A `main` consultada coincide com o pin local, mas o Aetherius integrado não contém todas as mesmas correções. O plano foi ajustado para aproveitar o adaptador de kick, gateway validado, roteamento por prefixo, permissões de identidade e desenho de RBAC. Foram executados 110 testes existentes desse recorte, todos aprovados; isso não substitui a homologação ingame.
-
-**Conclusão de viabilidade:** há uma ponte CEF ↔ cliente ↔ servidor aproveitável e serviços administrativos existentes. O painel é viável como extensão do gamemode, mas não como executor irrestrito de qualquer comando Vanilla. Cada ação precisa de um adaptador autorizado, validação dos efeitos no servidor e homologação com dois clientes.
-
-Os documentos de planejamento registram a pesquisa anterior. O estado da instalação de referência e o caminho para reproduzi-la estão em `INTEGRACAO_INGAME.md`; decisões e validações anteriores permanecem em `IMPLEMENTACAO.md`. A configuração distribuída continua desativada por padrão e cada instalação precisa de ativação e validação próprias.
+Os componentes de terceiros conservam suas licenças e atribuições em [third-party/alduinak/NOTICE.md](third-party/alduinak/NOTICE.md).

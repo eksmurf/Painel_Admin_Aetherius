@@ -28,9 +28,20 @@ if (!bridge.includes(marker)) {
   bridge = bridge.replace(outputAnchor, `    if (msgContent['customPacketType'] === 'aetheriusAdmin') {\n      this.sp.browser.executeJavaScript('window.AetheriusAdmin && window.AetheriusAdmin.receive(' + JSON.stringify(msgContent['response']) + ')');\n      return;\n    }\n${outputAnchor}`);
 }
 changes.push({ relative: bridgePath, content: bridge });
+// Additive client tools alongside the established UI transport.
+if (!bridge.includes('AdminToolsService')) {
+  bridge = "import { AdminToolsService } from './AdminToolsService';\n" + bridge;
+  bridge = bridge.replace('    super();', '    super();\n    new AdminToolsService(sp, controller);');
+  changes.find(entry => entry.relative === bridgePath).content = bridge;
+}
+changes.push({ relative: 'skymp5-client/src/services/services/AdminToolsService.ts', content: fs.readFileSync(path.join(root,'client/AdminToolsService.ts'),'utf8') });
 changes.push(patchOnce('skymp5-client/src/services/services/browserService.ts', '    if (e.isDown([DxScanCode.F1])) {', `    ${marker}\n    if (this.badMenusOpen.size === 0 && e.isDown([DxScanCode.F7])) {\n      this.sp.browser.executeJavaScript('window.AetheriusAdmin && window.AetheriusAdmin.toggle()');\n    }`, true));
 for (const file of fs.readdirSync(path.join(root, 'gamemode')).filter(name => name.endsWith('.cjs'))) changes.push({ relative: `aetherius/gamemode/admin-panel/${file}`, content: fs.readFileSync(path.join(root, 'gamemode', file), 'utf8') });
 for (const file of ['app.js', 'admin.css']) changes.push({ relative: `aetherius/ui/admin-panel/${file}`, content: fs.readFileSync(path.join(root, 'ui', file), 'utf8') });
+// Startup readiness must include the additive schema, not just connection to SQLite.
+const phase = changes.find(entry => entry.relative === 'aetherius/gamemode/phase0-basic.js');
+phase.content = phase.content.replace("if (typeof mp !== 'undefined') require(path.join(gamemodeDir, 'admin-panel', 'install.cjs')).install({ mp, gamemodeDir });", "const adminPanel = typeof mp !== 'undefined' ? require(path.join(gamemodeDir, 'admin-panel', 'install.cjs')).install({ mp, gamemodeDir }) : null;");
+phase.content = phase.content.replace('module.exports.bootReady = boot();', 'module.exports.bootReady = boot().then(async result => { await adminPanel?.ready; return result; });');
 changes.push({ relative: 'aetherius/config/admin-panel.example.json', content: fs.readFileSync(path.join(root, 'config/admin-panel.example.json'), 'utf8') });
 changes.push({ relative: 'aetherius/packages/database/migration-aetherius-admin-001.sql', content: fs.readFileSync(path.join(root, 'migrations/001_admin_panel.sql'), 'utf8') });
 const changed = changes.filter(entry => !fs.existsSync(path.join(target, entry.relative)) || fs.readFileSync(path.join(target, entry.relative), 'utf8') !== entry.content);

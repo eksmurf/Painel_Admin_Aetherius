@@ -102,6 +102,37 @@ function createMysqlStore({ db, transactionService }) {
     await db.query(`INSERT INTO aetherius_admin_operations (request_id,account_id,action,reason,is_sensitive,payload_hash,status)
       VALUES (?,?,'access.denied',?,1,?,'rejected')`, [randomUUID(), accountId, `Acesso negado: ${type || 'unknown'}`, '0'.repeat(64)]);
   }
-  return { authorize, targetRole, reserve, finish, mutate, audit, denied };
+  async function account(accountId) {
+    const rows = await db.query('SELECT id,status FROM accounts WHERE id=?', [accountId]);
+    if (!rows.length) fail('TARGET_UNAVAILABLE', 'Conta não encontrada.');
+    return { accountId, characterId: null, offline: true };
+  }
+  async function atomic(op, target, permission, validateSession, callback) {
+    const conn = await db.getConnection();
+    let commitAttempted = false;
+    try {
+      await conn.beginTransaction();
+      const auth = await authorize({ accountId: op.accountId, characterId: op.characterId }, conn);
+      if (!auth?.permissions.includes('panel.open') || !auth.permissions.includes(permission)) fail('FORBIDDEN', 'Permissão revogada.');
+      const [roles] = await conn.query('SELECT role FROM staff_roles WHERE account_id=? FOR UPDATE', [target.accountId]);
+      const rank = { moderator: 1, admin: 2, owner: 3 };
+      if (target.accountId !== op.accountId && auth.role !== 'owner' && (rank[roles[0]?.role] || 0) >= rank[auth.role]) fail('FORBIDDEN', 'A permissão sobre o alvo mudou.');
+      const [accounts] = await conn.query('SELECT status FROM accounts WHERE id=? FOR UPDATE', [target.accountId]);
+      if (!accounts.length || (!target.offline && accounts[0].status !== 'active')) fail('TARGET_UNAVAILABLE', 'Conta indisponível.');
+      if (!target.offline) {
+        const [characters] = await conn.query('SELECT status FROM characters WHERE id=? AND account_id=? FOR UPDATE', [target.characterId, target.accountId]);
+        if (characters[0]?.status !== 'approved') fail('TARGET_UNAVAILABLE', 'Personagem indisponível.');
+      }
+      validateSession();
+      const result = await callback(conn);
+      validateSession();
+      await finish(op, result, conn);
+      commitAttempted = true;
+      await conn.commit();
+      return result;
+    } catch (error) { await conn.rollback(); if (!commitAttempted) error.noEffect = true; throw error; }
+    finally { conn.release(); }
+  }
+  return { authorize, targetRole, reserve, finish, mutate, audit, denied, account, atomic };
 }
 module.exports = { createMysqlStore };

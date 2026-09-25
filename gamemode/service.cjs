@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const { actions, byId } = require('./catalog.cjs');
 const { fail, validate } = require('./protocol.cjs');
 const ranks = { moderator: 1, admin: 2, owner: 3 };
-function createService({ host, store, enabledActions, items = [], now = Date.now }) {
+function createService({ host, store, enabledActions, items = [], extensions = null, now = Date.now }) {
   const enabled = new Set(enabledActions);
   const limits = new Map();
   function rateLimit(actorId) {
@@ -25,7 +25,7 @@ function createService({ host, store, enabledActions, items = [], now = Date.now
     return auth;
   }
   function catalog(auth) {
-    return actions.map(action => ({ ...action, enabled: !action.unavailable && enabled.has(action.id) && auth.permissions.includes(action.permission), unavailable: action.unavailable || (!auth.permissions.includes(action.permission) ? 'Seu cargo não possui esta permissão.' : !enabled.has(action.id) ? 'Ação não habilitada pelo servidor.' : '') }));
+    return actions.filter(action => !action.panelHidden).map(action => ({ ...action, enabled: !action.unavailable && enabled.has(action.id) && auth.permissions.includes(action.permission), unavailable: action.unavailable || (!auth.permissions.includes(action.permission) ? 'Seu cargo não possui esta permissão.' : !enabled.has(action.id) ? 'Ação não habilitada pelo servidor.' : '') }));
   }
   async function players(operator, data) {
     const needle = (data.query || '').toLocaleLowerCase('pt-BR');
@@ -39,12 +39,14 @@ function createService({ host, store, enabledActions, items = [], now = Date.now
     const definition = byId.get(data.action);
     if (definition.unavailable || !enabled.has(data.action)) fail('UNAVAILABLE', 'Ação não habilitada neste servidor.');
     let auth = await authorize(operator, definition.permission);
-    const target = current(data.target.actorId, data.target);
+    const target = definition.targetKind === 'self' ? operator : definition.targetKind === 'account' ? await store.account(data.target.accountId) : current(data.target.actorId, data.target);
+    const currentTarget = () => { if (!target.offline) current(target.actorId, target); };
     const targetRole = await store.targetRole(target.accountId);
-    current(target.actorId, target);
+    currentTarget();
+    if (target.accountId === operator.accountId && ['player.ban', 'player.unban'].includes(data.action)) fail('INVALID', 'Não é possível alterar o próprio banimento.');
     if (target.actorId === operator.actorId && ['player.kick', 'player.bring', 'player.teleportTo', 'character.retire'].includes(data.action)) fail('INVALID', 'Selecione outro jogador para esta ação.');
     if (target.actorId !== operator.actorId && auth.role !== 'owner' && (ranks[targetRole] || 0) >= (ranks[auth.role] || 0)) fail('FORBIDDEN', 'Seu cargo não pode executar esta ação sobre este membro da Staff.');
-    const hash = crypto.createHash('sha256').update(JSON.stringify([data.action, target.actorId, target.session, data.reason, Object.entries(data.params).sort()])).digest('hex');
+    const hash = crypto.createHash('sha256').update(JSON.stringify([data.action, target.offline ? target.accountId : target.actorId, target.session, data.reason, Object.entries(data.params).sort()])).digest('hex');
     const operation = { requestId: message.requestId, accountId: operator.accountId, characterId: operator.characterId, targetAccountId: target.accountId, targetCharacterId: target.characterId, action: data.action, reason: data.reason, sensitive: !!definition.sensitive, hash };
     const reservation = await store.reserve(operation);
     if (!reservation.fresh) {
@@ -58,9 +60,9 @@ function createService({ host, store, enabledActions, items = [], now = Date.now
       const latestTargetRole = await store.targetRole(target.accountId);
       if (target.actorId !== operator.actorId && auth.role !== 'owner' && (ranks[latestTargetRole] || 0) >= (ranks[auth.role] || 0)) fail('FORBIDDEN', 'A permissão sobre o alvo mudou.');
       current(operator.actorId, operator);
-      current(target.actorId, target);
-      const validateSession = () => { current(operator.actorId, operator); current(target.actorId, target); };
-      const item = data.action === 'inventory.grant' ? items.find(entry => entry.id === data.params.item) : null;
+      currentTarget();
+      const validateSession = () => { current(operator.actorId, operator); currentTarget(); };
+      const item = data.action === 'inventory.grant' ? (extensions?.item(data.params.item) || items.find(entry => entry.id === data.params.item)) : null;
       if (data.action === 'inventory.grant' && !item) fail('INVALID', 'Item não autorizado no catálogo.');
       if (data.action === 'economy.setGold' || data.action === 'inventory.grant' || data.action === 'character.retire') {
         if (item) host.resolveItem(item); // Fail closed before changing inventory.
@@ -81,14 +83,25 @@ function createService({ host, store, enabledActions, items = [], now = Date.now
         effectStarted = true;
         host.kick(target);
         result = { status: 'succeeded', message: 'Desconexão da sessão solicitada ao servidor.' };
-      } else {
+      } else if (data.action === 'player.bring' || data.action === 'player.teleportTo') {
         effectStarted = true;
         host.teleport(data.action === 'player.bring' ? target : operator, data.action === 'player.bring' ? operator : target);
         result = { status: 'succeeded', message: 'Localização atualizada no servidor.' };
+      } else if (extensions) {
+        const prepared = await extensions.prepare(data.action, data.params, operator, target);
+        const finalAuth = await authorize(operator, definition.permission);
+        const finalTargetRole = await store.targetRole(target.accountId);
+        if (target.accountId !== operator.accountId && finalAuth.role !== 'owner' && (ranks[finalTargetRole] || 0) >= (ranks[finalAuth.role] || 0)) fail('FORBIDDEN','A permissão sobre o alvo mudou.');
+        validateSession();
+        effectStarted = true;
+        result = await extensions.execute({ operation, definition, params: data.params, operator, target, prepared, validateSession });
+      } else {
+        fail('UNAVAILABLE', 'Extensão não instalada neste servidor.');
       }
       await store.finish(operation, result);
       return result;
     } catch (error) {
+      if (error.noEffect) effectStarted = false;
       const result = { status: effectStarted ? 'unknown' : 'rejected', code: error.code || 'OPERATION_FAILED', message: effectStarted ? 'Não foi possível confirmar o resultado. Consulte a auditoria antes de repetir.' : error.code ? error.message : 'Operação recusada antes da execução.' };
       try { await store.finish(operation, result); } catch { /* accepted operation remains for reconciliation */ }
       return result;
@@ -104,9 +117,28 @@ function createService({ host, store, enabledActions, items = [], now = Date.now
       const auth = await authorize(operator, message.type === 'audit' ? 'logs.view' : null);
       if (['open', 'players'].includes(message.type) && !auth.permissions.includes('players.view')) fail('FORBIDDEN', 'Você não tem permissão para consultar jogadores.');
       let data;
-      if (message.type === 'open') data = { operator: { role: auth.role, label: host.visibleName(operator, operator) }, actions: catalog(auth), items: auth.permissions.includes('inventory.grant') ? items.map(({ id, label }) => ({ id, label })) : [], players: await players(operator, {}) };
+      if (message.type === 'open') data = { operator: { role: auth.role, label: host.visibleName(operator, operator) }, actions: catalog(auth), inventoryInspection: auth.permissions.includes('inventory.inspect'), resources: extensions ? Object.entries(require('./extension-catalog.cjs').resourcePermissions).filter(([, permission]) => auth.permissions.includes(permission)).map(([kind]) => kind).filter(kind => require('./extension-catalog.cjs').visibleResources.includes(kind)) : [], items: auth.permissions.includes('inventory.grant') ? items.slice(0, 100).map(({ id, label, category }) => ({ id, label, category })) : [], players: await players(operator, {}) };
       else if (message.type === 'players') data = await players(operator, message.data);
       else if (message.type === 'audit') data = await store.audit(message.data, auth.permissions.includes('logs.view.security'));
+        else if (message.type === 'weather') {
+          await authorize(operator,'world.weather');
+          if (!extensions || !enabled.has('weather.save')) fail('UNAVAILABLE','Clima do servidor indisponível.');
+          data = await extensions.weatherState();
+          await authorize(operator,'world.weather');
+        }
+        else if (message.type === 'modes') {
+        await authorize(operator,'staff.modes');
+        if (!extensions || !enabled.has('staff.mode')) fail('UNAVAILABLE','Modo de atendimento indisponível.');
+        data = extensions.modeState(operator);
+      }
+      else if (message.type === 'resources') {
+        await authorize(operator, require('./extension-catalog.cjs').resourcePermissions[message.data.kind]);
+        if (!extensions) fail('UNAVAILABLE', 'Catálogo não instalado.');
+        const inspect = message.data.kind === 'playerInventory' || (message.data.kind === 'items' && ['players','chests'].includes(message.data.scope));
+        if (inspect) await authorize(operator,'inventory.inspect');
+        data = await extensions.resources(message.data, operator);
+        await authorize(operator, inspect ? 'inventory.inspect' : require('./extension-catalog.cjs').resourcePermissions[message.data.kind]);
+      }
       else if (message.type === 'action') return { version: 1, requestId: message.requestId, type: message.type, ...await action(operator, message) };
       else data = {};
       current(actorId, operator);
